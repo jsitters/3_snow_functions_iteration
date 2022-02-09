@@ -3,6 +3,8 @@ title: "Snow Data Assignment: Web Scraping, Functions, and Iteration"
 author: "Nathan Mueller"
 date: "2-7-2022"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -184,32 +186,91 @@ headers <- pdf_text('https://snowstudies.org/wp-content/uploads/2022/02/Serially
   .[,2] %>%
   .[1:26] %>%
   str_trim(side = "left")
-empty<-list
-read_data<-for (i in 1:length(file_names)){
-  empty[[i]]<-read_delim(file_names[i])
+headers
+#function to read in 1 data file
+# 
+#file=file_names[1]
+reader<- function(file){
+  name = str_split_fixed(file,'/',2)[,2]%>%
+  gsub('_Forcing_Data.txt','',.)
+  df<-read_fwf(file)%>%
+    select(c(1:11))
+    names(df)<-headers[1:11]
+    df<-df%>%
+      mutate(site=name)
 }
-full_data<-do.call('rbind', empty)
-summary(full_data)
+view(reader(file_names[1]))
+
+
+
+# #overkill
+# empty<-list()
+# name_data<-for (i in 1:length(dataset)){
+#   name = str_split_fixed(file_names,'/',2)[,2]%>%
+#     gsub('_Forcing_Data.txt','',.)
+# }
+# #function to read in data
+# data=file_names[1]
+# empty=list()
+# read_data<-function(data){
+#   for (i in 1:length(data)){
+#     name = str_split_fixed(file_names,'/',2)[,2]%>%
+#     gsub('_Forcing_Data.txt','',.)%>%
+#   empty[[1]]<-read_delim(file_names[i], col_names=headers,show_col_types = FALSE)%>%
+#     select(c(1:20))%>%
+#     mutate(site = name[i]) 
+#   return(empty)
+#   }}
+# read_data(dataset)
+# 
+# 
+
 
 ```
 
 4. Use the `map` function to read in both meteorological files. Display a summary of your tibble.
 ```{r}
 
+met_files<- map_dfr(file_names, reader)
+summary(met_files)
 
 ```
 5. Make a line plot of mean temp by year by site (using the `air temp [K]` variable). Is there anything suspicious in the plot? Adjust your filtering if needed.
 ```{r}
+temperature<-met_files%>%
+  group_by(year, site)%>%
+  summarize(meanT = mean(`air temp [K]`))
 
-
+ggplot(temperature, aes(x=year, y=meanT, color=site))+
+  geom_line()+
+  ggthemes::theme_few()
+message("Site SBB_SASP has a higher yearly mean temperature than site SBB_SBSP for all years in the dataset.")
 ```
 6. Write a function that makes line plots of monthly average temperature at each site for a given year. Use a for loop to make these plots for 2005 to 2010. Are monthly average temperatures at the Senator Beck Study Plot ever warmer than the Snow Angel Study Plot?
 Hint: https://ggplot2.tidyverse.org/reference/print.ggplot.html
+```{r}
+loopy<-function(data){
+  for (i in 1:length(temperature)){
+    df<-data%>%
+      group_by(month, site)%>%
+      summarize(meanT=mean(`air temp [K]`))
+      print(ggplot(df, aes(x=month, y=meanT, color=site))+
+            geom_line())
+    
+  }}
+loopy(met_files)
 
+
+```
 Bonus: Make a plot of average daily precipitation by day of year (averaged across all available years). Color each site. 
 ```{r}
-
-
+#coloring each site will not work with duplicate site data
+precip<-met_files%>%
+  group_by(day, month, year)%>%
+  summarize(meanPre = mean(`precip [kg m-2 s-1]`))
+ggplot(precip, aes(x=year, y=meanPre))+
+  geom_point()+
+  ggthemes::theme_few()
 ```
 Bonus #2: Use a function and for loop to create yearly plots of precipitation by day of year. Color each site. 
 ```{r}
