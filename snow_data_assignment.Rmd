@@ -1,7 +1,7 @@
 ---
 title: "Snow Data Assignment: Web Scraping, Functions, and Iteration"
-author: "Nathan Mueller"
-date: "2-7-2022"
+author: "Jan Sitterson"
+date: "`r Sys.Date()`"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -16,130 +16,130 @@ library(readxl)
 ```
 
 
-# Simple web scraping
+<!-- # Simple web scraping -->
 
-R can read html using either rvest, xml, or xml2 packages. Here we are going to navigate to the Center for Snow and Avalance Studies  [Website](https://snowstudies.org/archived-data/) and read a table in. This table contains links to data we want to programatically download for three sites. We don't know much about these sites, but they contain incredibly rich snow, temperature, and precip data. 
-
-
-## Reading an html 
-
-### Extract CSV links from webpage
-
-```{r}
-site_url <- 'https://snowstudies.org/archived-data/'
-
-#Read the web url
-webpage <- read_html(site_url)
-
-#See if we can extract tables and get the data that way
-tables <- webpage %>%
-  html_nodes('table') %>%
-  magrittr::extract2(3) %>%
-  html_table(fill = TRUE)
-#That didn't work, so let's try a different approach
-
-#Extract only weblinks and then the URLs!
-links <- webpage %>%
-  html_nodes('a') %>%
-  .[grepl('24hr',.)] %>%
-  html_attr('href')
-
-```
-
-## Data Download
-
-### Download data in a for loop
-
-```{r}
-
-#Grab only the name of the file by splitting out on forward slashes
-datapath = 'data/'
-dir.create(datapath)
-file_names <- paste0(datapath,dataset)
-
-splits <- str_split_fixed(links,'/',8)
-
-#Keep only the 8th column
-dataset <- splits[,8] 
-
-#generate a file list for where the data goes
-file_names <- paste0('data/',dataset)
-
-for(i in 1:3){
-  download.file(links[i],destfile=file_names[i])
-}
-
-downloaded <- file.exists(file_names)
-
-evaluate <- !all(downloaded)
-
-```
+<!-- R can read html using either rvest, xml, or xml2 packages. Here we are going to navigate to the Center for Snow and Avalance Studies  [Website](https://snowstudies.org/archived-data/) and read a table in. This table contains links to data we want to programatically download for three sites. We don't know much about these sites, but they contain incredibly rich snow, temperature, and precip data.  -->
 
 
-### Download data in a map
+<!-- ## Reading an html  -->
 
-```{r}
+<!-- ### Extract CSV links from webpage -->
 
-#Map version of the same for loop (downloading 3 files)
-if(evaluate == T){
-  map2(links[1:3],file_names[1:3],download.file)
-}else{print('data already downloaded')}
+<!-- ```{r} -->
+<!-- site_url <- 'https://snowstudies.org/archived-data/' -->
 
-```
+<!-- #Read the web url -->
+<!-- webpage <- read_html(site_url) -->
 
-## Data read-in 
+<!-- #See if we can extract tables and get the data that way -->
+<!-- tables <- webpage %>% -->
+<!--   html_nodes('table') %>% -->
+<!--   magrittr::extract2(3) %>% -->
+<!--   html_table(fill = TRUE) -->
+<!-- #That didn't work, so let's try a different approach -->
 
-### Read in just the snow data as a loop
+<!-- #Extract only weblinks and then the URLs! -->
+<!-- links <- webpage %>% -->
+<!--   html_nodes('a') %>% -->
+<!--   .[grepl('24hr',.)] %>% -->
+<!--   html_attr('href') -->
 
-```{r}
-#Pattern matching to only keep certain files
-snow_files <- file_names %>%
-  .[!grepl('SG_24',.)] %>%
-  .[!grepl('PTSP',.)]
+<!-- ``` -->
 
-#empty_data <- list()
+<!-- ## Data Download -->
 
-# snow_data <- for(i in 1:length(snow_files)){
-#   empty_data[[i]] <- read_csv(snow_files[i]) %>%
-#     select(Year,DOY,Sno_Height_M)
-# }
+<!-- ### Download data in a for loop -->
 
-#snow_data_full <- do.call('rbind',empty_data)
+<!-- ```{r} -->
 
-#summary(snow_data_full)
-```
+<!-- #Grab only the name of the file by splitting out on forward slashes -->
+<!-- datapath = 'data/' -->
+<!-- dir.create(datapath) -->
+<!-- file_names <- paste0(datapath,dataset) -->
 
+<!-- splits <- str_split_fixed(links,'/',8) -->
 
-### Read in the data as a map function
+<!-- #Keep only the 8th column -->
+<!-- dataset <- splits[,8]  -->
 
-```{r}
+<!-- #generate a file list for where the data goes -->
+<!-- file_names <- paste0('data/',dataset) -->
 
-our_snow_reader <- function(file){
-  name = str_split_fixed(file,'/',2)[,2] %>%
-    gsub('_24hr.csv','',.)
-  df <- read_csv(file) %>%
-    select(Year,DOY,Sno_Height_M) %>%
-    mutate(site = name)
-}
+<!-- for(i in 1:3){ -->
+<!--   download.file(links[i],destfile=file_names[i]) -->
+<!-- } -->
 
-snow_data_full <- map_dfr(snow_files,our_snow_reader)
+<!-- downloaded <- file.exists(file_names) -->
 
-summary(snow_data_full)
-```
+<!-- evaluate <- !all(downloaded) -->
+
+<!-- ``` -->
 
 
-### Plot snow data
+<!-- ### Download data in a map -->
 
-```{r}
-snow_yearly <- snow_data_full %>%
-  group_by(Year,site) %>%
-  summarize(mean_height = mean(Sno_Height_M,na.rm=T))
+<!-- ```{r} -->
 
-ggplot(snow_yearly,aes(x=Year,y=mean_height,color=site)) + 
-  geom_point() +
-  ggthemes::theme_few() + 
-  ggthemes::scale_color_few()
-```
+<!-- #Map version of the same for loop (downloading 3 files) -->
+<!-- if(evaluate == T){ -->
+<!--   map2(links[1:3],file_names[1:3],download.file) -->
+<!-- }else{print('data already downloaded')} -->
+
+<!-- ``` -->
+
+<!-- ## Data read-in  -->
+
+<!-- ### Read in just the snow data as a loop -->
+
+<!-- ```{r} -->
+<!-- #Pattern matching to only keep certain files -->
+<!-- snow_files <- file_names %>% -->
+<!--   .[!grepl('SG_24',.)] %>% -->
+<!--   .[!grepl('PTSP',.)] -->
+
+<!-- #empty_data <- list() -->
+
+<!-- # snow_data <- for(i in 1:length(snow_files)){ -->
+<!-- #   empty_data[[i]] <- read_csv(snow_files[i]) %>% -->
+<!-- #     select(Year,DOY,Sno_Height_M) -->
+<!-- # } -->
+
+<!-- #snow_data_full <- do.call('rbind',empty_data) -->
+
+<!-- #summary(snow_data_full) -->
+<!-- ``` -->
+
+
+<!-- ### Read in the data as a map function -->
+
+<!-- ```{r} -->
+
+<!-- our_snow_reader <- function(file){ -->
+<!--   name = str_split_fixed(file,'/',2)[,2] %>% -->
+<!--     gsub('_24hr.csv','',.) -->
+<!--   df <- read_csv(file) %>% -->
+<!--     select(Year,DOY,Sno_Height_M) %>% -->
+<!--     mutate(site = name) -->
+<!-- } -->
+
+<!-- snow_data_full <- map_dfr(snow_files,our_snow_reader) -->
+
+<!-- summary(snow_data_full) -->
+<!-- ``` -->
+
+
+<!-- ### Plot snow data -->
+
+<!-- ```{r} -->
+<!-- snow_yearly <- snow_data_full %>% -->
+<!--   group_by(Year,site) %>% -->
+<!--   summarize(mean_height = mean(Sno_Height_M,na.rm=T)) -->
+
+<!-- ggplot(snow_yearly,aes(x=Year,y=mean_height,color=site)) +  -->
+<!--   geom_point() + -->
+<!--   ggthemes::theme_few() +  -->
+<!--   ggthemes::scale_color_few() -->
+<!-- ``` -->
 
 
 # Assignment:
@@ -170,6 +170,7 @@ for(i in 1:3){
   download.file(links[i],destfile=file_names[i])
 }
 downloaded <- file.exists(file_names)
+list.dirs(path='3_snow_functions_iteration/data')
 
 
 ```
@@ -202,30 +203,6 @@ reader<- function(file){
 view(reader(file_names[1]))
 
 
-
-# #overkill
-# empty<-list()
-# name_data<-for (i in 1:length(dataset)){
-#   name = str_split_fixed(file_names,'/',2)[,2]%>%
-#     gsub('_Forcing_Data.txt','',.)
-# }
-# #function to read in data
-# data=file_names[1]
-# empty=list()
-# read_data<-function(data){
-#   for (i in 1:length(data)){
-#     name = str_split_fixed(file_names,'/',2)[,2]%>%
-#     gsub('_Forcing_Data.txt','',.)%>%
-#   empty[[1]]<-read_delim(file_names[i], col_names=headers,show_col_types = FALSE)%>%
-#     select(c(1:20))%>%
-#     mutate(site = name[i]) 
-#   return(empty)
-#   }}
-# read_data(dataset)
-# 
-# 
-
-
 ```
 
 4. Use the `map` function to read in both meteorological files. Display a summary of your tibble.
@@ -244,36 +221,55 @@ temperature<-met_files%>%
 ggplot(temperature, aes(x=year, y=meanT, color=site))+
   geom_line()+
   ggthemes::theme_few()
-message("Site SBB_SASP has a higher yearly mean temperature than site SBB_SBSP for all years in the dataset.")
+message("Site SBB_SASP has a higher yearly mean temperature than site SBB_SBSP for all years in the dataset. There is a big jump in temperature from the first year to the following years. Further inspection (in Q6) is needed to determine the suspicious jump in data.")
+
 ```
 6. Write a function that makes line plots of monthly average temperature at each site for a given year. Use a for loop to make these plots for 2005 to 2010. Are monthly average temperatures at the Senator Beck Study Plot ever warmer than the Snow Angel Study Plot?
 Hint: https://ggplot2.tidyverse.org/reference/print.ggplot.html
 ```{r}
-loopy<-function(data){
-  for (i in 1:length(temperature)){
-    df<-data%>%
-      group_by(month, site)%>%
-      summarize(meanT=mean(`air temp [K]`))
-      print(ggplot(df, aes(x=month, y=meanT, color=site))+
-            geom_line())
-    
-  }}
-loopy(met_files)
 
+loopy<-function(data, xyear){
+  #y<-as.vector(unique(data[c("year")]))
+  met<-data%>%group_by(year, month , site)%>%
+  summarize(meanT=mean(`air temp [K]`))%>%
+    dplyr::filter(year==xyear)
+  print(ggplot(met,aes(x=month, y=meanT, color=site))+
+            geom_line()+ facet_wrap(xyear))}
+  
+for (i in 2005:2010){
+  loopy(met_files, i)
+}
+message("From 2005 to 2010 the monthly average temperatures at the Senator Beck Study Plot are never warmer than the Snow Angel Study Plot")
 
 ```
 Bonus: Make a plot of average daily precipitation by day of year (averaged across all available years). Color each site. 
 ```{r}
 #coloring each site will not work with duplicate site data
-precip<-met_files%>%
-  group_by(day, month, year)%>%
+met_files$second<-as.Date(with(met_files,paste(month,day,sep="-")),"%m-%d")%>%
+format(., "%j")
+  pre<-group_by(met_files,second)%>%
   summarize(meanPre = mean(`precip [kg m-2 s-1]`))
-ggplot(precip, aes(x=year, y=meanPre))+
+    names(pre)=c('Julian_Day', 'Mean_Precip')
+ggplot(pre, aes(x=Julian_Day,y=Mean_Precip))+
   geom_point()+
   ggthemes::theme_few()
+
+
 ```
 Bonus #2: Use a function and for loop to create yearly plots of precipitation by day of year. Color each site. 
 ```{r}
 
+Ploopy<-function(data, xyear){
+  #y<-as.vector(unique(data[c("year")]))
+  met<-data%>%group_by(year, second , site)%>%
+  summarize(meanP=mean(`precip [kg m-2 s-1]`))%>%
+    dplyr::filter(year==xyear)
+    colnames(met)[2]='Julian_Day'
+  print(ggplot(met,aes(x=Julian_Day, y=meanP, color=site))+
+            geom_point()+ facet_wrap(xyear))}
+  
+for (i in 2003:2010){
+  Ploopy(met_files, i)
+}
 
 ```
